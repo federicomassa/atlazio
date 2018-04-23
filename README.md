@@ -20,4 +20,5 @@ Now install to root:
 sudo cp \*.so\* /usr/lib
 cd ../../
 sudo cp qcustomplot.h /usr/include/
+cp $ENV{HOME}/atlante_ws/FindQCustomPlot.cmake /usr/share/cmake-3.5/Modules/
 ```
