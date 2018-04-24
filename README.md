@@ -1,14 +1,6 @@
-# To set up a Qt-Ros package (DEPRECATED)
+# To set up a Qt-Ros package
 
-``` 
-mkdir -p atlante_ws/src
-cd atlante_ws/src
-catkin_create_qt_pkg atlazio
-cd ..
-catkin_make --force-cmake
-```
-
-**This is deprecated because it uses old Qt4 style. Instead, just createa a normal ros package and use a simple CMakeLists.txt file with**
+**Just createa a normal ros package and use a simple CMakeLists.txt file with**
 
 ```
 set(CMAKE_AUTOMOC ON)
