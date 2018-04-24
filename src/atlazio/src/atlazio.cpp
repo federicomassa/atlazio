@@ -9,9 +9,10 @@
 ** Includes
 *****************************************************************************/
 
-#include <QtGui>
 #include <QApplication>
-#include "../include/atlazio/main_window.hpp"
+#include "main_window.h"
+
+#include <ros/ros.h>
 
 /*****************************************************************************
 ** Main
@@ -22,11 +23,14 @@ int main(int argc, char **argv) {
     /*********************
     ** Qt
     **********************/
+    ros::init(argc, argv, "test_node");
+    ros::NodeHandle n("~");
+    
+    ros::Rate rate(1);
+    
     QApplication app(argc, argv);
-    atlazio::MainWindow w(argc,argv);
-    w.show();
-    app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));
-    int result = app.exec();
-
-	return result;
+    MainWindow w;
+    w.draw();
+    
+    return app.exec();
 }
