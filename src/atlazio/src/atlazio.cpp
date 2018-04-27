@@ -23,13 +23,8 @@ int main(int argc, char **argv) {
     /*********************
     ** Qt
     **********************/
-    ros::init(argc, argv, "test_node");
-    ros::NodeHandle n("~");
-    
-    ros::Rate rate(1);
-    
     QApplication app(argc, argv);
-    MainWindow w;
+    MainWindow w(argc, argv);
     w.draw();
     
     return app.exec();

@@ -17,15 +17,26 @@ namespace Ui {
 class MainWindow;
 }
 
+namespace atlazio
+{
+   class QNode;
+}
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(int argc, char** argv, QWidget *parent = 0);
     ~MainWindow();
     void draw();
 private:
     Ui::MainWindow *ui;
+    atlazio::QNode* rosNode;
+    
+public slots:
+  void receiveNewPose(const double& x, const double& y);
+  void refreshCustomPlot();
+
     
 };
 

@@ -1,31 +1,45 @@
 #include "main_window.h"
 #include "ui_main_window.h"
 #include "qcustomplot.h"
+#include "qnode.h"
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    rosNode(new atlazio::QNode(argc, argv))
 {
     ui->setupUi(this);
+    
+    QObject::connect(rosNode, SIGNAL(poseReceived(const double&, const double&)), 
+			    this, SLOT(receiveNewPose(const double&, const double&)));
+    
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(refreshCustomPlot()));
+    timer->start(500);
+    
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete rosNode;
 }
 
 void MainWindow::draw()
 {
+  qDebug("In draw method!");
     ui->customPlot->setWindowState(Qt::WindowFullScreen);
     show();
     //app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));
     
-  
+    rosNode->init();
+    if (!rosNode->isRunning())
+      rosNode->run();
     
     // add two new graphs and set their look:
     ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setPen(QPen(Qt::blue)); // line color blue for first graph
-    ui->customPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
+    ui->customPlot->graph(0)->setPen(QPen(Qt::red)); // line color blue for first graph
+//     ui->customPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
     ui->customPlot->addGraph();
     
     // configure right and top axis to show ticks but no labels:
@@ -44,14 +58,14 @@ void MainWindow::draw()
     // Note: we could have also just called ui->customPlot->rescaleAxes(); instead
     // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
     ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+}
 
-    double x = 0.0;
-    while(x < 100)
-    {
-      ui->customPlot->graph(0)->addData(x,x);
-      x += 1.0;
-      
-      //rate.sleep();
-    }
-    
+void MainWindow::receiveNewPose(const double& x, const double& y)
+{
+  ui->customPlot->graph(0)->addData(x, y);
+}
+
+void MainWindow::refreshCustomPlot()
+{
+   ui->customPlot->replot();
 }

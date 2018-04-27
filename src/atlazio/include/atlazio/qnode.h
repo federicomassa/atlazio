@@ -24,6 +24,7 @@
 #include <string>
 #include <QThread>
 #include <QStringListModel>
+#include <nav_msgs/Odometry.h>
 
 
 /*****************************************************************************
@@ -39,11 +40,10 @@ namespace atlazio {
 class QNode : public QThread {
     Q_OBJECT
 public:
-	QNode(int argc, char** argv );
+	QNode(int argc, char** argv);
 	virtual ~QNode();
 	bool init();
-	bool init(const std::string &master_url, const std::string &host_url);
-	void run();
+	void run() override;
 
 	/*********************
 	** Logging
@@ -59,15 +59,18 @@ public:
 	QStringListModel* loggingModel() { return &logging_model; }
 	void log( const LogLevel &level, const std::string &msg);
 
-Q_SIGNALS:
-	void loggingUpdated();
+signals:
+    void loggingUpdated();
     void rosShutdown();
-
+    void poseReceived(const double& x, const double& y);
+    
 private:
 	int init_argc;
 	char** init_argv;
-	ros::Publisher chatter_publisher;
-    QStringListModel logging_model;
+	ros::Subscriber pose_subscriber;
+      QStringListModel logging_model;
+      
+    void poseCallback(const nav_msgs::Odometry::ConstPtr& odom);
 };
 
 }  // namespace atlazio

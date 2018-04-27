@@ -47,12 +47,12 @@ catkin_package()
 # Sections
 ##############################################################################
 
-set(SOURCES src/atlazio.cpp src/main_window.cpp
+set(SOURCES src/atlazio.cpp src/main_window.cpp src/qnode.cpp
 ${QCustomPlot_PATH}/qcustomplot.cpp
 )
 
 # All headers that contatins Qt classes. Needed to force moc (don't know why automoc is not working on them)
-set(HEADERS_MOC include/atlazio/main_window.h)
+set(HEADERS_MOC include/atlazio/main_window.h include/atlazio/qnode.h)
 
 ##############################################################################
 # Binaries
