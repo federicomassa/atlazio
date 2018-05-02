@@ -20,6 +20,7 @@ class MainWindow;
 namespace atlazio
 {
    class QNode;
+   class RosMonitor;
 }
 
 class MainWindow : public QMainWindow
@@ -32,6 +33,7 @@ public:
 private:
     Ui::MainWindow *ui;
     atlazio::QNode* rosNode;
+    atlazio::RosMonitor* rosMonitor;
     
 public slots:
   void receiveNewPose(const double& x, const double& y);

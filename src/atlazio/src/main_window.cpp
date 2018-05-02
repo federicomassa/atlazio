@@ -2,20 +2,27 @@
 #include "ui_main_window.h"
 #include "qcustomplot.h"
 #include "qnode.h"
+#include "ros_monitor.h"
+
+#include <vector>
+#include <string>
 
 MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    rosNode(new atlazio::QNode(argc, argv))
+    rosNode(new atlazio::QNode(argc, argv)),
+    rosMonitor(new atlazio::RosMonitor(argc, argv))
 {
     ui->setupUi(this);
     
-    QObject::connect(rosNode, SIGNAL(poseReceived(const double&, const double&)), 
+    connect(rosNode, SIGNAL(poseReceived(const double&, const double&)), 
 			    this, SLOT(receiveNewPose(const double&, const double&)));
     
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(refreshCustomPlot()));
-    timer->start(500);
+    timer->start(100);
+    
+  
     
 }
 
@@ -23,24 +30,47 @@ MainWindow::~MainWindow()
 {
     delete ui;
     delete rosNode;
+    delete rosMonitor;
 }
 
 void MainWindow::draw()
 {
-  qDebug("In draw method!");
-    ui->customPlot->setWindowState(Qt::WindowFullScreen);
-    show();
-    //app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));
-    
+  show();
+  //app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));
+  
+//   std::vector<std::string> topics = rosNode->getAvailableTopics(); 
+//   qDebug("------- Available topics: -----");
+//   for (auto itr = topics.begin(); itr != topics.end(); itr++)
+//     qDebug((*itr).c_str());
+//   
+//   qDebug("-------------------------------");
+  
+
     rosNode->init();
     if (!rosNode->isRunning())
       rosNode->run();
     
+    rosMonitor->init();
+    if (!rosMonitor->isRunning())
+      rosMonitor->run();
+
+    qDebug("Run started from main window");
+    
+    rosMonitor->wait();
+    
+    std::vector<std::string> availableTopics = rosMonitor->getAvailableTopics();
+    for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
+    {
+      ui->comboBox->addItem(QString(itr->c_str()));
+    }
+    
+    
     // add two new graphs and set their look:
     ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setPen(QPen(Qt::red)); // line color blue for first graph
-//     ui->customPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
-    ui->customPlot->addGraph();
+    ui->customPlot->graph(0)->setPen(QPen(Qt::red)); // line color red for first graph
+    ui->customPlot->graph(0)->setLineStyle((QCPGraph::LineStyle)QCPGraph::lsNone);
+    ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc , 3));
+    //     ui->customPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
     
     // configure right and top axis to show ticks but no labels:
     // (see QCPAxisRect::setupFullAxesBox for a quicker method to do this)

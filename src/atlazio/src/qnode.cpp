@@ -45,14 +45,18 @@ QNode::~QNode() {
 }
 
 bool QNode::init() {
-	ros::init(init_argc,init_argv,"atlazio");
-	if ( ! ros::master::check() ) {
-		return false;
+	ros::init(init_argc,init_argv,"atlazio_rosNode");
+	
+	if ( ! ros::master::check() ) 
+	{
+	  qDebug("QNode::init - Unable to contact master");
+	  return false;
 	}
+	
 	ros::start(); // explicitly needed since our nodehandle is going out of scope.
 	ros::NodeHandle n;
 	// Add your ros communications here.
-	pose_subscriber = n.subscribe("test_pose", 1000, &QNode::poseCallback, this);
+	pose_subscriber = n.subscribe("odom_raw", 1000, &QNode::poseCallback, this);
 	start();
 		
 	return true;
@@ -100,4 +104,23 @@ void QNode::log( const LogLevel &level, const std::string &msg) {
 	Q_EMIT loggingUpdated(); // used to readjust the scrollbar
 }
 
+std::vector< std::string > QNode::getAvailableTopics()
+{/*
+  qDebug("hey");
+  ros::master::V_TopicInfo topics;
+  ros::master::getTopics(topics);
+  
+  std::vector<std::string> topicNames;
+  for (auto itr = topics.begin(); itr != topics.end(); itr++)
+    topicNames.push_back(itr->name);
+  
+  qDebug("nice");
+  
+  return topicNames;
+  */
+}
+
+
 }  // namespace atlazio
+
+
