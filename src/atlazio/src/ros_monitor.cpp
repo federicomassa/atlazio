@@ -59,6 +59,8 @@ void RosMonitor::run() {
   ros::master::V_TopicInfo topics;
   ros::master::getTopics(topics);
   
+  topicNames.clear();
+  
   for (auto itr = topics.begin(); itr != topics.end(); itr++)
     topicNames.push_back(itr->name);
   

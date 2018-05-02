@@ -54,11 +54,13 @@ ${QCustomPlot_PATH}/qcustomplot.cpp
 # All headers that contatins Qt classes. Needed to force moc (don't know why automoc is not working on them)
 set(HEADERS_MOC include/atlazio/main_window.h include/atlazio/qnode.h include/atlazio/ros_monitor.h)
 
+set(RESOURCES resources/images.qrc)
+
 ##############################################################################
 # Binaries
 ##############################################################################
 
-add_executable(atlazio ${SOURCES} ${HEADERS_MOC})
+add_executable(atlazio ${SOURCES} ${HEADERS_MOC} ${RESOURCES})
 target_link_libraries(atlazio 
 Qt5::Widgets
 Qt5::Core

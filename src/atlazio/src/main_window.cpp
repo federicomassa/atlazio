@@ -22,7 +22,11 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     connect(timer, SIGNAL(timeout()), this, SLOT(refreshCustomPlot()));
     timer->start(100);
     
-  
+    
+    // Connect refresh button
+    connect(ui->refreshTopicsButton, SIGNAL(clicked()), this, SLOT(refreshTopics()));
+    connect(ui->comboBox, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onTopicChanged(const QString&)));
+    
     
 }
 
@@ -65,6 +69,9 @@ void MainWindow::draw()
     }
     
     
+    // Refresh button
+    ui->refreshTopicsButton->setIcon(QIcon(":/images/refresh.png"));
+    
     // add two new graphs and set their look:
     ui->customPlot->addGraph();
     ui->customPlot->graph(0)->setPen(QPen(Qt::red)); // line color red for first graph
@@ -74,6 +81,9 @@ void MainWindow::draw()
     
     // configure right and top axis to show ticks but no labels:
     // (see QCPAxisRect::setupFullAxesBox for a quicker method to do this)
+    ui->customPlot->xAxis->setRange(-10, 10);
+    ui->customPlot->yAxis->setRange(-10,10);
+    
     ui->customPlot->xAxis2->setVisible(true);
     ui->customPlot->xAxis2->setTickLabels(false);
     ui->customPlot->yAxis2->setVisible(true);
@@ -98,4 +108,31 @@ void MainWindow::receiveNewPose(const double& x, const double& y)
 void MainWindow::refreshCustomPlot()
 {
    ui->customPlot->replot();
+}
+
+
+void MainWindow::refreshTopics()
+{
+   ui->comboBox->clear();
+  
+   if (rosMonitor->isRunning())
+     rosMonitor->wait();
+   
+   rosMonitor->run();
+
+   qDebug("Run started from main window");
+    
+   rosMonitor->wait();
+    
+   std::vector<std::string> availableTopics = rosMonitor->getAvailableTopics();
+   for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
+    {
+      ui->comboBox->addItem(QString(itr->c_str()));
+    }
+}
+
+
+void MainWindow::onTopicChanged(const QString& newTopic)
+{
+   qDebug() << "Changed topic to: " << newTopic;
 }

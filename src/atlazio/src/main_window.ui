@@ -27,6 +27,17 @@
        <widget class="QComboBox" name="comboBox"/>
       </item>
       <item>
+       <widget class="QPushButton" name="refreshTopicsButton">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="./resources/images.qrc">
+          <normaloff>:/images/refresh.png</normaloff>:/images/refresh.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

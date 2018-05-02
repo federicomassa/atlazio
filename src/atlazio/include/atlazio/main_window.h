@@ -12,6 +12,7 @@
 ** Includes
 *****************************************************************************/
 #include <QMainWindow>
+#include <QString>
 
 namespace Ui {
 class MainWindow;
@@ -37,7 +38,9 @@ private:
     
 public slots:
   void receiveNewPose(const double& x, const double& y);
+  void refreshTopics();
   void refreshCustomPlot();
+  void onTopicChanged(const QString&);
 
     
 };
