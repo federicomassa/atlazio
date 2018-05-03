@@ -3,8 +3,8 @@
 ** Node that 
 *****************************************************************************/
 
-#ifndef ROS_MONITOR_H
-#define ROS_MONITOR_H
+#ifndef ROS_NODE_H
+#define ROS_NODE_H
 
 /*****************************************************************************
 ** Includes
@@ -17,7 +17,9 @@
 #include <QStringListModel>
 #include <vector>
 #include <string>
-#include <QMap>
+
+#include <sensor_msgs/Imu.h>
+#include <nav_msgs/Odometry.h>
 
 /*****************************************************************************
 ** Namespaces
@@ -29,25 +31,36 @@ namespace atlazio {
 ** Class
 *****************************************************************************/
 
-class RosMonitor : public QThread {
+class RosNode : public QThread {
     Q_OBJECT
 public:
-	RosMonitor(int argc, char** argv);
-	virtual ~RosMonitor();
-	bool init();
+	RosNode(int argc, char** argv);
+	virtual ~RosNode();
+	bool init(const QString&, const QString&);
 	void run() override;
-	const QMap<QString, QString>& getAvailableTopics() const;
+	const std::vector<std::string>& getAvailableTopics() const;
 
-private:
-	QMap<QString, QString> availableTopics;
-	  
 signals:
-    void rosShutdown();
+  void newXYPoint(const double&, const double&);
+	
+public slots:
+  void changeSubscription(const QString& topicName, const QString& topicType);
+  void slot2();
     
 private:
 	int init_argc;
 	char** init_argv;
       
+	QString currentTopicName;
+	QString currentTopicType;
+	
+	void odometryCallback(const nav_msgs::Odometry::ConstPtr&);
+	void imuCallback(const sensor_msgs::Imu::ConstPtr&);
+
+	ros::AsyncSpinner spinner ;
+	ros::NodeHandle n;
+	ros::Subscriber sub;
+;
 };
 
 }  // namespace atlazio

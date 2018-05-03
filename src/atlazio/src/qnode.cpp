@@ -63,7 +63,7 @@ bool QNode::init() {
 }
 
 void QNode::run() {
-	ros::spin();
+	//ros::spin();
 	std::cout << "Ros shutdown, proceeding to close the gui." << std::endl;
 	Q_EMIT rosShutdown(); // used to signal the gui for a shutdown (useful to roslaunch)
 }
@@ -119,6 +119,19 @@ std::vector< std::string > QNode::getAvailableTopics()
   return topicNames;
   */
 }
+
+// void QNode::changeSubscription(const QString& newTopicName, const QString& newTopicType)
+// {
+//     ros::NodeHandle n;
+//     
+//     if (newTopicType == "nav_msgs/Odometry")
+//       n.subscribe(newTopicName.toLatin1().data(), 1000, &RosNode::odometryCallback, this);
+//     else if (newTopicType == "sensor_msgs/Imu")
+//       n.subscribe(newTopicName.toLatin1().data(), 1000, &RosNode::imuCallback, this);
+//     
+//     qDebug() << "New type: " << newTopicType;
+//     //ros::spin();
+// }
 
 
 }  // namespace atlazio

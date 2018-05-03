@@ -3,6 +3,7 @@
 #include "qcustomplot.h"
 #include "qnode.h"
 #include "ros_monitor.h"
+#include "ros_node.h"
 
 #include <vector>
 #include <string>
@@ -11,7 +12,8 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     rosNode(new atlazio::QNode(argc, argv)),
-    rosMonitor(new atlazio::RosMonitor(argc, argv))
+    rosMonitor(new atlazio::RosMonitor(argc, argv)),
+    testNode(new atlazio::RosNode(argc, argv))
 {
     ui->setupUi(this);
     
@@ -25,10 +27,35 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     
     // Connect refresh button
     connect(ui->refreshTopicsButton, SIGNAL(clicked()), this, SLOT(refreshTopics()));
+    
+    // topic change signal
     connect(ui->comboBox, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onTopicChanged(const QString&)));
     
+    // Arbitrarily large numbers so that first points in graph define new range
+    resetRangeData();
+  
+    
+    // Graph margin in %
+    graphMargin = 0.1;
+    
+    
+    // FIXME test node
+    //connect(ui->refreshTopicsButton, SIGNAL(clicked()), testNode, SLOT(slot1()));
+    
+    connect(this, SIGNAL(changedTopic(const QString&, const QString&)), testNode, 
+	    SLOT(changeSubscription(const QString&, const QString&)));
+    connect(testNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
     
 }
+
+void MainWindow::resetRangeData()
+{
+    currentMinX = 1E13;
+    currentMaxX = -1E13;
+    currentMinY = 1E13;
+    currentMaxY = -1E13;
+}
+
 
 MainWindow::~MainWindow()
 {
@@ -43,29 +70,33 @@ void MainWindow::draw()
   //app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));
   
 //   std::vector<std::string> topics = rosNode->getAvailableTopics(); 
-//   qDebug("------- Available topics: -----");
+//   qDebug("------- Available topicsc_: -----");
 //   for (auto itr = topics.begin(); itr != topics.end(); itr++)
 //     qDebug((*itr).c_str());
 //   
 //   qDebug("-------------------------------");
   
 
-    rosNode->init();
-    if (!rosNode->isRunning())
-      rosNode->run();
-    
+//     rosNode->init();
+//     if (!rosNode->isRunning())
+//       rosNode->run();
+//     
     rosMonitor->init();
-    if (!rosMonitor->isRunning())
-      rosMonitor->run();
+//     if (!rosMonitor->isRunning())
+//       rosMonitor->run();
+    
+    testNode->init("", "");
+//     if (!testNode->isRunning())
+//       testNode->run();
 
     qDebug("Run started from main window");
     
     rosMonitor->wait();
     
-    std::vector<std::string> availableTopics = rosMonitor->getAvailableTopics();
+    const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
     for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
     {
-      ui->comboBox->addItem(QString(itr->c_str()));
+      ui->comboBox->addItem(itr.key());
     }
     
     
@@ -102,12 +133,25 @@ void MainWindow::draw()
 
 void MainWindow::receiveNewPose(const double& x, const double& y)
 {
+  if (x > currentMaxX)
+    currentMaxX = x;
+  if (x < currentMinX)
+    currentMinX = x;
+  
+  if (y > currentMaxY)
+    currentMaxY = y;
+  if (y < currentMinY)
+    currentMinY = y;
+  
   ui->customPlot->graph(0)->addData(x, y);
 }
 
 void MainWindow::refreshCustomPlot()
 {
-   ui->customPlot->replot();
+  ui->customPlot->xAxis->setRange(currentMinX - graphMargin*(currentMaxX - currentMinX), currentMaxX + graphMargin*(currentMaxX - currentMinX));
+  ui->customPlot->yAxis->setRange(currentMinY - graphMargin*(currentMaxY - currentMinY), currentMaxY + graphMargin*(currentMaxY - currentMinY));//   ui->customPlot->replot(); 
+
+  ui->customPlot->replot(); 
 }
 
 
@@ -118,21 +162,43 @@ void MainWindow::refreshTopics()
    if (rosMonitor->isRunning())
      rosMonitor->wait();
    
-   rosMonitor->run();
+   rosMonitor->init();
 
    qDebug("Run started from main window");
     
    rosMonitor->wait();
     
-   std::vector<std::string> availableTopics = rosMonitor->getAvailableTopics();
+  const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
    for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
     {
-      ui->comboBox->addItem(QString(itr->c_str()));
+      ui->comboBox->addItem(itr.key());
     }
 }
 
 
 void MainWindow::onTopicChanged(const QString& newTopic)
 {
-   qDebug() << "Changed topic to: " << newTopic;
+ // rosNode->terminate();
+  
+  if (ui->customPlot->graph(0))
+  {
+    ui->customPlot->graph(0)->data()->clear();
+    ui->customPlot->replot();
+  }
+  
+  resetRangeData();
+  
+  if (testNode->isRunning())
+  {
+    testNode->quit();
+    testNode->wait();
+  }
+  
+  const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
+  
+  qDebug() << "onTopicChanged: " << newTopic << " " << availableTopics.value(newTopic);
+  testNode->init(newTopic, availableTopics.value(newTopic));
+//   testNode->run();
+  //emit changedTopic(newTopic, availableTopics.value(newTopic));
+  
 }

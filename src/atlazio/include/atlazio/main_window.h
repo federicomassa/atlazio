@@ -13,6 +13,7 @@
 *****************************************************************************/
 #include <QMainWindow>
 #include <QString>
+#include <QMap>
 
 namespace Ui {
 class MainWindow;
@@ -22,6 +23,7 @@ namespace atlazio
 {
    class QNode;
    class RosMonitor;
+   class RosNode;
 }
 
 class MainWindow : public QMainWindow
@@ -35,14 +37,28 @@ private:
     Ui::MainWindow *ui;
     atlazio::QNode* rosNode;
     atlazio::RosMonitor* rosMonitor;
+    atlazio::RosNode* testNode;
+    
+    // Range of current graph
+    double currentMinX;
+    double currentMaxX;
+    double currentMinY;
+    double currentMaxY;
+    
+    // Additional space left in graph beyond data range (in %)
+    double graphMargin;
+    
+    void resetRangeData();
     
 public slots:
   void receiveNewPose(const double& x, const double& y);
   void refreshTopics();
   void refreshCustomPlot();
   void onTopicChanged(const QString&);
-
     
+signals:
+  void changedTopic(const QString& newTopicName, const QString& newTopicType);
+  
 };
 
 #endif // atlazio_MAIN_WINDOW_H

@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
     /*********************
     ** Qt
     **********************/
+    ros::init(argc,argv,"atlazio_ros_node");
+
     QApplication app(argc, argv);
     MainWindow w(argc, argv);
     w.draw();
