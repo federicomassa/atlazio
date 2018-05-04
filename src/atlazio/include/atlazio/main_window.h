@@ -21,7 +21,6 @@ class MainWindow;
 
 namespace atlazio
 {
-   class QNode;
    class RosMonitor;
    class RosNode;
 }
@@ -35,9 +34,8 @@ public:
     void draw();
 private:
     Ui::MainWindow *ui;
-    atlazio::QNode* rosNode;
+    atlazio::RosNode* rosNode;
     atlazio::RosMonitor* rosMonitor;
-    atlazio::RosNode* testNode;
     
     // Range of current graph
     double currentMinX;
@@ -55,6 +53,7 @@ public slots:
   void refreshTopics();
   void refreshCustomPlot();
   void onTopicChanged(const QString&);
+  void browse();
     
 signals:
   void changedTopic(const QString& newTopicName, const QString& newTopicType);

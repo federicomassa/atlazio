@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>638</width>
-    <height>741</height>
+    <width>1250</width>
+    <height>885</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
        <enum>QLayout::SetMinimumSize</enum>
       </property>
       <item>
-       <widget class="QComboBox" name="comboBox"/>
+       <widget class="QComboBox" name="topicBox"/>
       </item>
       <item>
        <widget class="QPushButton" name="refreshTopicsButton">
@@ -32,10 +32,23 @@
          <string/>
         </property>
         <property name="icon">
-         <iconset resource="./resources/images.qrc">
+         <iconset resource="../atlante_ws/src/atlazio/resources/images.qrc">
           <normaloff>:/images/refresh.png</normaloff>:/images/refresh.png</iconset>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="currentTimeLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>/</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="totalTimeLineEdit"/>
       </item>
       <item>
        <spacer name="horizontalSpacer">
@@ -58,7 +71,20 @@
        <enum>QLayout::SetMaximumSize</enum>
       </property>
       <item>
-       <widget class="QCustomPlot" name="customPlot" native="true">
+       <widget class="QCustomPlot" name="signalPlot" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>600</width>
+          <height>600</height>
+         </size>
+        </property>
+        <property name="cursor">
+         <cursorShape>OpenHandCursor</cursorShape>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCustomPlot" name="trackPlot" native="true">
         <property name="minimumSize">
          <size>
           <width>600</width>
@@ -72,6 +98,24 @@
       </item>
      </layout>
     </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLineEdit" name="bagFileLineEdit"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="browseButton">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../atlante_ws/src/atlazio/resources/images.qrc">
+          <normaloff>:/images/browse.png</normaloff>:/images/browse.png</iconset>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -79,7 +123,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>638</width>
+     <width>1250</width>
      <height>37</height>
     </rect>
    </property>
@@ -94,6 +138,8 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../atlante_ws/src/atlazio/resources/images.qrc"/>
+ </resources>
  <connections/>
 </ui>

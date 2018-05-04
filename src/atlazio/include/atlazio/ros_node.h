@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <nav_msgs/Odometry.h>
 

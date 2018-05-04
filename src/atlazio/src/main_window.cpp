@@ -1,7 +1,6 @@
 #include "main_window.h"
 #include "ui_main_window.h"
 #include "qcustomplot.h"
-#include "qnode.h"
 #include "ros_monitor.h"
 #include "ros_node.h"
 
@@ -11,15 +10,11 @@
 MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    rosNode(new atlazio::QNode(argc, argv)),
-    rosMonitor(new atlazio::RosMonitor(argc, argv)),
-    testNode(new atlazio::RosNode(argc, argv))
+    rosNode(new atlazio::RosNode(argc, argv)),
+    rosMonitor(new atlazio::RosMonitor(argc, argv))
 {
     ui->setupUi(this);
-    
-    connect(rosNode, SIGNAL(poseReceived(const double&, const double&)), 
-			    this, SLOT(receiveNewPose(const double&, const double&)));
-    
+   
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(refreshCustomPlot()));
     timer->start(100);
@@ -29,7 +24,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     connect(ui->refreshTopicsButton, SIGNAL(clicked()), this, SLOT(refreshTopics()));
     
     // topic change signal
-    connect(ui->comboBox, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onTopicChanged(const QString&)));
+    connect(ui->topicBox, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onTopicChanged(const QString&)));
     
     // Arbitrarily large numbers so that first points in graph define new range
     resetRangeData();
@@ -38,14 +33,12 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     // Graph margin in %
     graphMargin = 0.1;
     
-    
-    // FIXME test node
-    //connect(ui->refreshTopicsButton, SIGNAL(clicked()), testNode, SLOT(slot1()));
-    
-    connect(this, SIGNAL(changedTopic(const QString&, const QString&)), testNode, 
+    connect(this, SIGNAL(changedTopic(const QString&, const QString&)), rosNode, 
 	    SLOT(changeSubscription(const QString&, const QString&)));
-    connect(testNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
+    connect(rosNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
     
+    // Browse files
+    connect(ui->browseButton, SIGNAL(clicked()), this, SLOT(browse()));
 }
 
 void MainWindow::resetRangeData()
@@ -85,9 +78,9 @@ void MainWindow::draw()
 //     if (!rosMonitor->isRunning())
 //       rosMonitor->run();
     
-    testNode->init("", "");
-//     if (!testNode->isRunning())
-//       testNode->run();
+    rosNode->init("", "");
+//     if (!rosNode->isRunning())
+//       rosNode->run();
 
     qDebug("Run started from main window");
     
@@ -96,7 +89,7 @@ void MainWindow::draw()
     const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
     for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
     {
-      ui->comboBox->addItem(itr.key());
+      ui->topicBox->addItem(itr.key());
     }
     
     
@@ -104,35 +97,38 @@ void MainWindow::draw()
     ui->refreshTopicsButton->setIcon(QIcon(":/images/refresh.png"));
     
     // add two new graphs and set their look:
-    ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setPen(QPen(Qt::red)); // line color red for first graph
-    ui->customPlot->graph(0)->setLineStyle((QCPGraph::LineStyle)QCPGraph::lsNone);
-    ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc , 3));
-    //     ui->customPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
+    ui->signalPlot->addGraph();
+    ui->signalPlot->graph(0)->setPen(QPen(Qt::red)); // line color red for first graph
+    ui->signalPlot->graph(0)->setLineStyle((QCPGraph::LineStyle)QCPGraph::lsNone);
+    ui->signalPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc , 3));
+    //     ui->signalPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
     
     // configure right and top axis to show ticks but no labels:
     // (see QCPAxisRect::setupFullAxesBox for a quicker method to do this)
-    ui->customPlot->xAxis->setRange(-10, 10);
-    ui->customPlot->yAxis->setRange(-10,10);
+    ui->signalPlot->xAxis->setRange(-10, 10);
+    ui->signalPlot->yAxis->setRange(-10,10);
     
-    ui->customPlot->xAxis2->setVisible(true);
-    ui->customPlot->xAxis2->setTickLabels(false);
-    ui->customPlot->yAxis2->setVisible(true);
-    ui->customPlot->yAxis2->setTickLabels(false);
+    ui->signalPlot->xAxis2->setVisible(true);
+    ui->signalPlot->xAxis2->setTickLabels(false);
+    ui->signalPlot->yAxis2->setVisible(true);
+    ui->signalPlot->yAxis2->setTickLabels(false);
     // make left and bottom axes always transfer their ranges to right and top axes:
-    //connect(ui->customPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot->xAxis2, SLOT(setRange(QCPRange)));
-    //connect(ui->customPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot->yAxis2, SLOT(setRange(QCPRange)));
+    //connect(ui->signalPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->signalPlot->xAxis2, SLOT(setRange(QCPRange)));
+    //connect(ui->signalPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->signalPlot->yAxis2, SLOT(setRange(QCPRange)));
     // pass data points to graphs:
     // let the ranges scale themselves so graph 0 fits perfectly in the visible area:
-    ui->customPlot->graph(0)->rescaleAxes();
+    ui->signalPlot->graph(0)->rescaleAxes();
     // same thing for graph 1, but only enlarge ranges (in case graph 1 is smaller than graph 0):
-    // Note: we could have also just called ui->customPlot->rescaleAxes(); instead
+    // Note: we could have also just called ui->signalPlot->rescaleAxes(); instead
     // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
-    ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    ui->signalPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
 }
 
 void MainWindow::receiveNewPose(const double& x, const double& y)
 {
+  if (ui->signalPlot->graph(0) == nullptr)
+    return;
+  
   if (x > currentMaxX)
     currentMaxX = x;
   if (x < currentMinX)
@@ -143,21 +139,21 @@ void MainWindow::receiveNewPose(const double& x, const double& y)
   if (y < currentMinY)
     currentMinY = y;
   
-  ui->customPlot->graph(0)->addData(x, y);
+  ui->signalPlot->graph(0)->addData(x, y);
 }
 
 void MainWindow::refreshCustomPlot()
 {
-  ui->customPlot->xAxis->setRange(currentMinX - graphMargin*(currentMaxX - currentMinX), currentMaxX + graphMargin*(currentMaxX - currentMinX));
-  ui->customPlot->yAxis->setRange(currentMinY - graphMargin*(currentMaxY - currentMinY), currentMaxY + graphMargin*(currentMaxY - currentMinY));//   ui->customPlot->replot(); 
+  ui->signalPlot->xAxis->setRange(currentMinX - graphMargin*(currentMaxX - currentMinX), currentMaxX + graphMargin*(currentMaxX - currentMinX));
+  ui->signalPlot->yAxis->setRange(currentMinY - graphMargin*(currentMaxY - currentMinY), currentMaxY + graphMargin*(currentMaxY - currentMinY));//   ui->signalPlot->replot(); 
 
-  ui->customPlot->replot(); 
+  ui->signalPlot->replot(); 
 }
 
 
 void MainWindow::refreshTopics()
 {
-   ui->comboBox->clear();
+   ui->topicBox->clear();
   
    if (rosMonitor->isRunning())
      rosMonitor->wait();
@@ -171,7 +167,7 @@ void MainWindow::refreshTopics()
   const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
    for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
     {
-      ui->comboBox->addItem(itr.key());
+      ui->topicBox->addItem(itr.key());
     }
 }
 
@@ -180,25 +176,39 @@ void MainWindow::onTopicChanged(const QString& newTopic)
 {
  // rosNode->terminate();
   
-  if (ui->customPlot->graph(0))
+  if (ui->signalPlot->graph(0))
   {
-    ui->customPlot->graph(0)->data()->clear();
-    ui->customPlot->replot();
+    ui->signalPlot->graph(0)->data()->clear();
+    ui->signalPlot->replot();
   }
   
   resetRangeData();
   
-  if (testNode->isRunning())
+  if (rosNode->isRunning())
   {
-    testNode->quit();
-    testNode->wait();
+    rosNode->quit();
+    rosNode->wait();
   }
   
   const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
   
   qDebug() << "onTopicChanged: " << newTopic << " " << availableTopics.value(newTopic);
-  testNode->init(newTopic, availableTopics.value(newTopic));
-//   testNode->run();
+  rosNode->init(newTopic, availableTopics.value(newTopic));
+//   rosNode->run();
   //emit changedTopic(newTopic, availableTopics.value(newTopic));
   
+}
+
+void MainWindow::browse()
+{
+   QString filename =  QFileDialog::getOpenFileName(
+          this,
+          "Open Document",
+          QDir::currentPath(),
+          "All files (*.*) ;; Document files (*.doc *.rtf);; PNG files (*.png)");
+ 
+    if( !filename.isNull() )
+    {
+      qDebug() << "selected file path : " << filename.toUtf8();
+    }
 }
