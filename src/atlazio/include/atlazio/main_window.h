@@ -14,6 +14,8 @@
 #include <QMainWindow>
 #include <QString>
 #include <QMap>
+#include "bag_reader.h"
+#include <QProgressDialog>
 
 namespace Ui {
 class MainWindow;
@@ -37,11 +39,17 @@ private:
     atlazio::RosNode* rosNode;
     atlazio::RosMonitor* rosMonitor;
     
+    // Utility class to open bag files
+    atlazio::BagReader* bagReader;
+    
     // Range of current graph
     double currentMinX;
     double currentMaxX;
     double currentMinY;
     double currentMaxY;
+    
+    // Message box
+    QProgressDialog* waitMsg;
     
     // Additional space left in graph beyond data range (in %)
     double graphMargin;
@@ -53,7 +61,10 @@ public slots:
   void refreshTopics();
   void refreshCustomPlot();
   void onTopicChanged(const QString&);
-  void browse();
+  void openBagFile();
+  void openMessageBox();
+  void closeMessageBox();
+  void terminateThreads();
     
 signals:
   void changedTopic(const QString& newTopicName, const QString& newTopicType);

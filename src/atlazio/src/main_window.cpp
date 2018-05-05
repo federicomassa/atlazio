@@ -6,15 +6,19 @@
 
 #include <vector>
 #include <string>
+#include <QDialogButtonBox>
+
 
 MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     rosNode(new atlazio::RosNode(argc, argv)),
-    rosMonitor(new atlazio::RosMonitor(argc, argv))
+    rosMonitor(new atlazio::RosMonitor(argc, argv)),
+    bagReader(new atlazio::BagReader(this))
 {
     ui->setupUi(this);
-   
+    setWindowTitle("ATLAZIO");
+    
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(refreshCustomPlot()));
     timer->start(100);
@@ -28,7 +32,6 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     
     // Arbitrarily large numbers so that first points in graph define new range
     resetRangeData();
-  
     
     // Graph margin in %
     graphMargin = 0.1;
@@ -38,7 +41,12 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     connect(rosNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
     
     // Browse files
-    connect(ui->browseButton, SIGNAL(clicked()), this, SLOT(browse()));
+    connect(ui->browseButton, SIGNAL(clicked()), this, SLOT(openBagFile()));
+    
+    // Message box connection
+    connect(bagReader, SIGNAL(openingBagFile()), this, SLOT(openMessageBox()));
+    connect(bagReader, SIGNAL(closingBagFile()), this, SLOT(closeMessageBox()));
+
 }
 
 void MainWindow::resetRangeData()
@@ -122,6 +130,36 @@ void MainWindow::draw()
     // Note: we could have also just called ui->signalPlot->rescaleAxes(); instead
     // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
     ui->signalPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    
+    
+    
+    // add two new graphs and set their look:
+    ui->trackPlot->addGraph();
+    ui->trackPlot->graph(0)->setPen(QPen(Qt::blue)); // line color red for first graph
+    ui->trackPlot->graph(0)->setLineStyle((QCPGraph::LineStyle)QCPGraph::lsNone);
+    ui->trackPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc , 3));
+    //     ui->trackPlot->graph(0)->setBrush(QBrush(QColor(0, 0, 255, 20))); // first graph will be filled with translucent blue
+    
+    // configure right and top axis to show ticks but no labels:
+    // (see QCPAxisRect::setupFullAxesBox for a quicker method to do this)
+    ui->trackPlot->xAxis->setRange(-10, 10);
+    ui->trackPlot->yAxis->setRange(-10,10);
+    
+    ui->trackPlot->xAxis2->setVisible(true);
+    ui->trackPlot->xAxis2->setTickLabels(false);
+    ui->trackPlot->yAxis2->setVisible(true);
+    ui->trackPlot->yAxis2->setTickLabels(false);
+    // make left and bottom axes always transfer their ranges to right and top axes:
+    //connect(ui->trackPlot->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->trackPlot->xAxis2, SLOT(setRange(QCPRange)));
+    //connect(ui->trackPlot->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->trackPlot->yAxis2, SLOT(setRange(QCPRange)));
+    // pass data points to graphs:
+    // let the ranges scale themselves so graph 0 fits perfectly in the visible area:
+    ui->trackPlot->graph(0)->rescaleAxes();
+    // same thing for graph 1, but only enlarge ranges (in case graph 1 is smaller than graph 0):
+    // Note: we could have also just called ui->trackPlot->rescaleAxes(); instead
+    // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
+    ui->trackPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    
 }
 
 void MainWindow::receiveNewPose(const double& x, const double& y)
@@ -199,16 +237,48 @@ void MainWindow::onTopicChanged(const QString& newTopic)
   
 }
 
-void MainWindow::browse()
+void MainWindow::openBagFile()
 {
    QString filename =  QFileDialog::getOpenFileName(
           this,
-          "Open Document",
+          "Open bag file",
           QDir::currentPath(),
-          "All files (*.*) ;; Document files (*.doc *.rtf);; PNG files (*.png)");
+          "All files (*.*) ;; Bag files (*.bag)");
  
     if( !filename.isNull() )
     {
-      qDebug() << "selected file path : " << filename.toUtf8();
+     bagReader->open(filename.toLatin1().data());
+     bagReader->drawTrack(ui->trackPlot, "/odom");
     }
+    
+    bagReader->close();
 }
+
+void MainWindow::openMessageBox()
+{
+    //waitMsg = new QDialog(QMessageBox::Icon::Information, QString(""), QString("Loading..."), QMessageBox::NoButton, this);
+  waitMsg = new QProgressDialog(this);
+  waitMsg->setModal(false);
+  waitMsg->show();
+  waitMsg->raise();
+  waitMsg->activateWindow();
+}
+
+
+void MainWindow::closeMessageBox()
+{
+  waitMsg->close();
+  delete waitMsg;
+  waitMsg = nullptr;
+}
+
+void MainWindow::terminateThreads()
+{
+  rosMonitor->quit();
+  rosMonitor->wait();
+  
+  rosNode->quit();
+  rosNode->wait();
+}
+
+

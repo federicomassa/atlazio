@@ -10,12 +10,19 @@ project(atlazio)
 ##############################################################################
 
 # qt_build provides the qt cmake glue, roscpp the comms for a default talker
-find_package(catkin REQUIRED COMPONENTS qt_build roscpp)
+find_package(catkin REQUIRED COMPONENTS qt_build roscpp 
+  sensor_msgs
+  geometry_msgs
+  rosbag
+  nav_msgs)
 #find_package(QCustomPlot REQUIRED)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5PrintSupport REQUIRED)
+
+find_package(Boost REQUIRED)
+
 include_directories(${catkin_INCLUDE_DIRS})
 
 set(CMAKE_CXX_STANDARD 14)
@@ -47,13 +54,15 @@ catkin_package()
 # Sections
 ##############################################################################
 
-set(SOURCES src/atlazio.cpp src/main_window.cpp src/ros_monitor.cpp src/ros_node.cpp
+set(SOURCES src/atlazio.cpp src/main_window.cpp src/ros_monitor.cpp src/ros_node.cpp 
+src/bag_reader.cpp
 ${QCustomPlot_PATH}/qcustomplot.cpp
 )
 
 # All headers that contatins Qt classes. Needed to force moc (don't know why automoc is not working on them)
 set(HEADERS_MOC include/atlazio/main_window.h include/atlazio/ros_monitor.h
   include/atlazio/ros_node.h
+  include/atlazio/bag_reader.h
 )
 
 set(RESOURCES resources/images.qrc)

@@ -26,7 +26,15 @@ int main(int argc, char **argv) {
     ros::init(argc,argv,"atlazio_ros_node");
 
     QApplication app(argc, argv);
+    
+    
+    app.setWindowIcon(QIcon(":/images/logo.jpeg"));
     MainWindow w(argc, argv);
+    
+    app.connect(&app, SIGNAL(lastWindowClosed()), &w, SLOT(terminateThreads())); 
+    app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit())); 
+    
+    
     w.draw();
     
     return app.exec();
