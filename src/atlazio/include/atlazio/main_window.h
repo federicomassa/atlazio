@@ -60,7 +60,7 @@ public slots:
   void receiveNewPose(const double& x, const double& y);
   void refreshTopics();
   void refreshCustomPlot();
-  void onTopicChanged(const QString&);
+  void onTopicChanged(int);
   void openBagFile();
   void openMessageBox();
   void closeMessageBox();

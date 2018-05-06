@@ -3,6 +3,7 @@
 #include "qcustomplot.h"
 #include "ros_monitor.h"
 #include "ros_node.h"
+#include "topic.h"
 
 #include <vector>
 #include <string>
@@ -32,7 +33,7 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     connect(ui->closeBagButton, SIGNAL(clicked()), this, SLOT(closeBagFile()));
     
     // topic change signal
-    connect(ui->topicBox, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onTopicChanged(const QString&)));
+    connect(ui->topicBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onTopicChanged(int)));
     
     // Arbitrarily large numbers so that first points in graph define new range
     resetRangeData();
@@ -148,6 +149,7 @@ void MainWindow::draw()
 
 void MainWindow::receiveNewPose(const double& x, const double& y)
 {
+  qDebug() << "received new pose: " << x << '\t' << y;
   if (ui->signalPlot->graph(0) == nullptr)
     return;
   
@@ -162,6 +164,7 @@ void MainWindow::receiveNewPose(const double& x, const double& y)
     currentMinY = y;
   
   ui->signalPlot->graph(0)->addData(x, y);
+  qDebug() << "added new point";
 }
 
 void MainWindow::refreshCustomPlot()
@@ -191,7 +194,7 @@ void MainWindow::refreshTopics()
     const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
     for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
     {
-      ui->topicBox->addItem(itr.key() + " (" + itr.value() + ")");
+      ui->topicBox->addTopic(atlazio::Topic(itr.key(), itr.value()));
     }
    }
    
@@ -203,16 +206,17 @@ void MainWindow::refreshTopics()
 	
 	for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
 	{
-	  ui->topicBox->addItem(itr.key() + " (" + itr.value() + ")");
+	  ui->topicBox->addTopic(atlazio::Topic(itr.key(), itr.value()));
 	}
      }
    }
 }
 
 
-void MainWindow::onTopicChanged(const QString& newTopic)
+void MainWindow::onTopicChanged(int index)
 {
  // rosNode->terminate();
+  atlazio::Topic t = ui->topicBox->getTopic(index);
   
   if (isLiveMode)
   {
@@ -229,11 +233,9 @@ void MainWindow::onTopicChanged(const QString& newTopic)
       rosNode->quit();
       rosNode->wait();
     }
-  
-    const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
-  
-    qDebug() << "onTopicChanged: " << newTopic << " " << availableTopics.value(newTopic);
-    rosNode->init(newTopic, availableTopics.value(newTopic));
+    
+    qDebug() << "onTopicChanged: " << t.getName() << " " << t.getType();
+    rosNode->init(t.getName(), t.getType());
 //   rosNode->run();
   //emit changedTopic(newTopic, availableTopics.value(newTopic));
   }

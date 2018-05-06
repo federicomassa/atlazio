@@ -24,7 +24,7 @@
        <enum>QLayout::SetMinimumSize</enum>
       </property>
       <item>
-       <widget class="QComboBox" name="topicBox"/>
+       <widget class="atlazio::TopicComboBox" name="topicBox"/>
       </item>
       <item>
        <widget class="QPushButton" name="refreshTopicsButton">
@@ -132,6 +132,12 @@
    <class>QCustomPlot</class>
    <extends>QWidget</extends>
    <header>/home/federico/qcustomplot/qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>atlazio::TopicComboBox</class>
+   <extends>QComboBox</extends>
+   <header>/home/federico/atlante_ws/src/atlazio/include/atlazio/topiccombobox.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

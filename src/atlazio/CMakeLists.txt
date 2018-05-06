@@ -56,6 +56,8 @@ catkin_package()
 
 set(SOURCES src/atlazio.cpp src/main_window.cpp src/ros_monitor.cpp src/ros_node.cpp 
 src/bag_reader.cpp
+src/topic.cpp
+src/topiccombobox.cpp
 ${QCustomPlot_PATH}/qcustomplot.cpp
 )
 
@@ -63,6 +65,7 @@ ${QCustomPlot_PATH}/qcustomplot.cpp
 set(HEADERS_MOC include/atlazio/main_window.h include/atlazio/ros_monitor.h
   include/atlazio/ros_node.h
   include/atlazio/bag_reader.h
+  include/atlazio/topiccombobox.h
 )
 
 set(RESOURCES resources/images.qrc)

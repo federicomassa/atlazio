@@ -61,6 +61,7 @@ bool RosNode::init(const QString& topicName, const QString& topicType) {
 	currentTopicName = topicName;
 	currentTopicType = topicType;
 	
+  spinner.stop();
 	
   if ( ! ros::master::check() ) 
   {
