@@ -55,7 +55,7 @@ private:
     double graphMargin;
     
     void resetRangeData();
-    
+    bool isLiveMode;
 public slots:
   void receiveNewPose(const double& x, const double& y);
   void refreshTopics();
@@ -65,6 +65,8 @@ public slots:
   void openMessageBox();
   void closeMessageBox();
   void terminateThreads();
+  void liveMode(int);
+  void closeBagFile();
     
 signals:
   void changedTopic(const QString& newTopicName, const QString& newTopicType);

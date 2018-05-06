@@ -4,5 +4,6 @@
 	<file>images/refresh.png</file>
 	<file>images/browse.png</file>
 	<file>images/logo.jpeg</file>
+	<file>images/close.png</file>
     </qresource>
 </RCC>

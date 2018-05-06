@@ -14,18 +14,22 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     ui(new Ui::MainWindow),
     rosNode(new atlazio::RosNode(argc, argv)),
     rosMonitor(new atlazio::RosMonitor(argc, argv)),
-    bagReader(new atlazio::BagReader(this))
+    bagReader(new atlazio::BagReader(this)),
+    isLiveMode(false)
 {
     ui->setupUi(this);
+    ui->bagFileLineEdit->setReadOnly(true);
+    ui->topicBox->setMinimumSize(QSize(600, 50));
+    
     setWindowTitle("ATLAZIO");
     
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(refreshCustomPlot()));
     timer->start(100);
     
-    
     // Connect refresh button
     connect(ui->refreshTopicsButton, SIGNAL(clicked()), this, SLOT(refreshTopics()));
+    connect(ui->closeBagButton, SIGNAL(clicked()), this, SLOT(closeBagFile()));
     
     // topic change signal
     connect(ui->topicBox, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onTopicChanged(const QString&)));
@@ -36,17 +40,14 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) :
     // Graph margin in %
     graphMargin = 0.1;
     
-    connect(this, SIGNAL(changedTopic(const QString&, const QString&)), rosNode, 
-	    SLOT(changeSubscription(const QString&, const QString&)));
-    connect(rosNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
-    
     // Browse files
     connect(ui->browseButton, SIGNAL(clicked()), this, SLOT(openBagFile()));
     
     // Message box connection
     connect(bagReader, SIGNAL(openingBagFile()), this, SLOT(openMessageBox()));
     connect(bagReader, SIGNAL(closingBagFile()), this, SLOT(closeMessageBox()));
-
+    
+    connect(ui->liveModeBox, SIGNAL(stateChanged(int)), this, SLOT(liveMode(int)));
 }
 
 void MainWindow::resetRangeData()
@@ -81,29 +82,12 @@ void MainWindow::draw()
 //     rosNode->init();
 //     if (!rosNode->isRunning())
 //       rosNode->run();
-//     
-    rosMonitor->init();
-//     if (!rosMonitor->isRunning())
-//       rosMonitor->run();
-    
-    rosNode->init("", "");
-//     if (!rosNode->isRunning())
-//       rosNode->run();
-
-    qDebug("Run started from main window");
-    
-    rosMonitor->wait();
-    
-    const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
-    for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
-    {
-      ui->topicBox->addItem(itr.key());
-    }
-    
+//  
     
     // Refresh button
     ui->refreshTopicsButton->setIcon(QIcon(":/images/refresh.png"));
-    
+    ui->closeBagButton->setIcon(QIcon(":/images/close.png"));
+
     // add two new graphs and set their look:
     ui->signalPlot->addGraph();
     ui->signalPlot->graph(0)->setPen(QPen(Qt::red)); // line color red for first graph
@@ -158,7 +142,7 @@ void MainWindow::draw()
     // same thing for graph 1, but only enlarge ranges (in case graph 1 is smaller than graph 0):
     // Note: we could have also just called ui->trackPlot->rescaleAxes(); instead
     // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
-    ui->trackPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    //ui->trackPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
     
 }
 
@@ -193,20 +177,36 @@ void MainWindow::refreshTopics()
 {
    ui->topicBox->clear();
   
-   if (rosMonitor->isRunning())
-     rosMonitor->wait();
+   if (isLiveMode)
+   {
+    if (rosMonitor->isRunning())
+      rosMonitor->wait();
    
-   rosMonitor->init();
+    rosMonitor->init();
 
-   qDebug("Run started from main window");
+    qDebug("Run started from main window");
     
-   rosMonitor->wait();
+    rosMonitor->wait();
     
-  const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
-   for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
+    const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
+    for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
     {
-      ui->topicBox->addItem(itr.key());
+      ui->topicBox->addItem(itr.key() + " (" + itr.value() + ")");
     }
+   }
+   
+   else
+   {
+     if (bagReader->isOpen())
+     {
+	QMap<QString,QString> availableTopics = bagReader->getAvailableTopics();
+	
+	for (auto itr = availableTopics.begin(); itr != availableTopics.end(); itr++)
+	{
+	  ui->topicBox->addItem(itr.key() + " (" + itr.value() + ")");
+	}
+     }
+   }
 }
 
 
@@ -214,27 +214,35 @@ void MainWindow::onTopicChanged(const QString& newTopic)
 {
  // rosNode->terminate();
   
-  if (ui->signalPlot->graph(0))
+  if (isLiveMode)
   {
-    ui->signalPlot->graph(0)->data()->clear();
-    ui->signalPlot->replot();
-  }
+    if (ui->signalPlot->graph(0))
+    {
+      ui->signalPlot->graph(0)->data()->clear();
+      ui->signalPlot->replot();
+    }
   
-  resetRangeData();
+    resetRangeData();
   
-  if (rosNode->isRunning())
-  {
-    rosNode->quit();
-    rosNode->wait();
-  }
+    if (rosNode->isRunning())
+    {
+      rosNode->quit();
+      rosNode->wait();
+    }
   
-  const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
+    const QMap<QString, QString>& availableTopics = rosMonitor->getAvailableTopics();
   
-  qDebug() << "onTopicChanged: " << newTopic << " " << availableTopics.value(newTopic);
-  rosNode->init(newTopic, availableTopics.value(newTopic));
+    qDebug() << "onTopicChanged: " << newTopic << " " << availableTopics.value(newTopic);
+    rosNode->init(newTopic, availableTopics.value(newTopic));
 //   rosNode->run();
   //emit changedTopic(newTopic, availableTopics.value(newTopic));
+  }
   
+  else
+  {
+    
+  }
+    
 }
 
 void MainWindow::openBagFile()
@@ -251,7 +259,9 @@ void MainWindow::openBagFile()
      bagReader->drawTrack(ui->trackPlot, "/odom");
     }
     
-    bagReader->close();
+    ui->bagFileLineEdit->setText(filename);
+    refreshTopics();
+    //bagReader->close();
 }
 
 void MainWindow::openMessageBox()
@@ -259,6 +269,8 @@ void MainWindow::openMessageBox()
     //waitMsg = new QDialog(QMessageBox::Icon::Information, QString(""), QString("Loading..."), QMessageBox::NoButton, this);
   waitMsg = new QProgressDialog(this);
   waitMsg->setModal(false);
+  waitMsg->setMinimumDuration(0);
+  waitMsg->setValue(1);
   waitMsg->show();
   waitMsg->raise();
   waitMsg->activateWindow();
@@ -280,5 +292,74 @@ void MainWindow::terminateThreads()
   rosNode->quit();
   rosNode->wait();
 }
+
+void MainWindow::liveMode(int status)
+{
+   if (status > 0)
+   { 
+     isLiveMode = true;
+     
+     connect(this, SIGNAL(changedTopic(const QString&, const QString&)), rosNode, 
+	    SLOT(changeSubscription(const QString&, const QString&)));
+     connect(rosNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
+    
+   
+     // Close bag file
+     
+    
+     // Live 
+        rosMonitor->init();
+//     if (!rosMonitor->isRunning())
+//       rosMonitor->run();
+    
+	rosNode->init("", "");
+//     if (!rosNode->isRunning())
+//       rosNode->run();
+
+    
+      rosMonitor->wait();
+      
+      refreshTopics();
+   }
+   else if (status == 0)
+   {
+     // Disconnect everything and 
+     disconnect(this, SIGNAL(changedTopic(const QString&, const QString&)), rosNode, 
+	    SLOT(changeSubscription(const QString&, const QString&)));
+     disconnect(rosNode, SIGNAL(newXYPoint(const double&, const double&)), this, SLOT(receiveNewPose(const double&, const double&)));
+    
+     
+     isLiveMode = false;
+     
+     if (rosMonitor->isRunning())
+     {
+       rosMonitor->quit();
+       rosMonitor->wait();
+     }
+     
+     if (rosNode->isRunning())
+     {
+      rosNode->quit();
+      rosNode->wait();
+     }
+     
+     refreshTopics();
+   }
+}
+
+void MainWindow::closeBagFile()
+{
+  bagReader->close();
+  refreshTopics();
+  
+  ui->bagFileLineEdit->setText("");
+  
+  if (ui->trackPlot->graph(0))
+    ui->trackPlot->graph(0)->data()->clear();
+  
+  ui->trackPlot->replot();
+}
+
+
 
 

@@ -37,18 +37,12 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QLineEdit" name="currentTimeLineEdit"/>
-      </item>
-      <item>
-       <widget class="QLabel" name="label">
+       <item>
+       <widget class="QCheckBox" name="liveModeBox">
         <property name="text">
-         <string>/</string>
+         <string>Live Mode</string>
         </property>
        </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="totalTimeLineEdit"/>
       </item>
       <item>
        <spacer name="horizontalSpacer">
@@ -113,6 +107,9 @@
           <normaloff>:/images/browse.png</normaloff>:/images/browse.png</iconset>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="closeBagButton"/>
       </item>
      </layout>
     </item>

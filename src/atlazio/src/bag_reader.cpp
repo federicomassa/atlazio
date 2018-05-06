@@ -11,6 +11,13 @@ namespace atlazio
 BagReader::BagReader(QWidget* parent) : QObject(parent)
 {
   bagPath = "";
+  
+  trackMinX = 1E13;
+  trackMaxX = -1E13;
+  trackMinY = 1E13;
+  trackMaxY = -1E13; 
+  
+  graphMargin = 0.1;
 }
   
 bool BagReader::isOpen() const
@@ -73,17 +80,43 @@ void BagReader::drawTrack(QCustomPlot* plot, const std::string& gpsTopic)
 	  first = false;
 	}
 	
-	plot->graph(0)->addData(odom_msg->pose.pose.position.x, odom_msg->pose.pose.position.y);
+	double x = odom_msg->pose.pose.position.x;
+	double y = odom_msg->pose.pose.position.y;
+	
+	if (x > trackMaxX)
+	  trackMaxX = x;
+	if (x < trackMinX)
+	  trackMinX = x;
+	
+	if (y > trackMaxY)
+	  trackMaxY = y;
+	if (y < trackMinY)
+	  trackMinY = y;
+	
+	plot->graph(0)->addData(x, y);
 	
       }
       
 
     }
     
+    plot->xAxis->setRange(trackMinX - graphMargin*(trackMaxX - trackMinX), trackMaxX + graphMargin*(trackMaxX - trackMinX));
+    plot->yAxis->setRange(trackMinY - graphMargin*(trackMaxY - trackMinY), trackMaxY + graphMargin*(trackMaxY - trackMinY));
     plot->replot();
-    
-    emit closingBagFile();
-    
+}
+
+QMap<QString, QString> BagReader::getAvailableTopics() const
+{
+  rosbag::View view(bag);
+  std::vector<const rosbag::ConnectionInfo *> connection_infos = view.getConnections();
+  QMap<QString, QString> topics;
+  
+  BOOST_FOREACH(const rosbag::ConnectionInfo *info, connection_infos)
+  {
+    topics[QString(info->topic.c_str())] = QString(info->datatype.c_str());    
+  }
+
+  return topics;
 }
 
   
